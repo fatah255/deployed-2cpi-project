@@ -264,6 +264,36 @@ const Canvas = ({ boardId }: CanvasProps) => {
         }
       } else if (canvasState.mode === CanvasMode.resizing) {
         resizeSelectedLayer(current);
+      } else if (
+        canvasState.mode === CanvasMode.Pointing &&
+        "origin" in canvasState
+      ) {
+        let deltaX: number, deltaY: number;
+
+        if (e.movementX !== undefined && e.pointerType === "mouse") {
+          deltaX = e.movementX;
+          deltaY = e.movementY;
+        } else {
+          // fallback for touch: calculate from screen coordinates
+          const newOrigin = {
+            x: e.clientX,
+            y: e.clientY,
+          };
+
+          deltaX = newOrigin.x - canvasState.origin.x;
+          deltaY = newOrigin.y - canvasState.origin.y;
+
+          // update the origin for the next move
+          setCanvasState({
+            mode: CanvasMode.Pointing,
+            origin: newOrigin,
+          });
+        }
+
+        setCamera((prev) => ({
+          x: prev.x + deltaX,
+          y: prev.y + deltaY,
+        }));
       } else if (canvasState.mode === CanvasMode.Pencil) {
         continueDrawing(
           {
@@ -304,7 +334,13 @@ const Canvas = ({ boardId }: CanvasProps) => {
         x: e.clientX - bounds.left - camera.x,
         y: e.clientY - bounds.top - camera.y,
       };
-
+      if (canvasState.mode === CanvasMode.Pointing) {
+        setCanvasState({
+          mode: CanvasMode.Pointing,
+          origin: point,
+        });
+        return;
+      }
       if (canvasState.mode === CanvasMode.Inserting) {
         return;
       }
@@ -473,6 +509,8 @@ const Canvas = ({ boardId }: CanvasProps) => {
       else if (canvasState.mode === CanvasMode.Inserting) {
         //add a new layer to the canvas
         insertLayer(canvasState.layerType, point);
+      } else if (canvasState.mode === CanvasMode.Pointing) {
+        setCanvasState({ mode: CanvasMode.Pointing });
       } else {
         setCanvasState({ mode: CanvasMode.None });
       }

@@ -13,6 +13,7 @@ import {
   StickyNote,
   Type,
   Undo2,
+  Pointer,
 } from "lucide-react";
 import { CanvasMode, CanvasState, LayerType } from "@/types/canvas";
 
@@ -136,6 +137,16 @@ const Toolbar = ({
           onClick={() => {
             setCanvasState({
               mode: CanvasMode.Pencil,
+            });
+          }}
+        />
+        <ToolButton
+          isActive={canvasState.mode === CanvasMode.Pointing}
+          label="Pointer"
+          icon={Pointer}
+          onClick={() => {
+            setCanvasState({
+              mode: CanvasMode.Pointing,
             });
           }}
         />

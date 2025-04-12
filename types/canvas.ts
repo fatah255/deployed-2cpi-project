@@ -128,6 +128,10 @@ export type CanvasState =
         | LayerType.Rectangle
         | LayerType.Text
         | LayerType.Note;
+    }
+  | {
+      mode: CanvasMode.Pointing;
+      origin: Point;
     };
 
 export enum CanvasMode {
@@ -138,6 +142,7 @@ export enum CanvasMode {
   resizing,
   Pencil,
   Inserting,
+  Pointing,
 }
 
 export type Layer =
