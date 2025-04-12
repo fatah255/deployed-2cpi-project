@@ -251,6 +251,7 @@ const Canvas = ({ boardId }: CanvasProps) => {
     ({ setMyPresence }, e: React.PointerEvent) => {
       if (!isAdmin) return;
       e.preventDefault();
+      const bounds = (e.currentTarget as Element).getBoundingClientRect();
       //@ts-ignore
       const current = pointerEventToCanvasPoint(e, camera);
       if (canvasState.mode === CanvasMode.Pressing) {
@@ -264,7 +265,13 @@ const Canvas = ({ boardId }: CanvasProps) => {
       } else if (canvasState.mode === CanvasMode.resizing) {
         resizeSelectedLayer(current);
       } else if (canvasState.mode === CanvasMode.Pencil) {
-        continueDrawing(current, e); //to continue drawing
+        continueDrawing(
+          {
+            x: e.clientX - bounds.left - camera.x,
+            y: e.clientY - bounds.top - camera.y,
+          },
+          e
+        ); //to continue drawing
       }
       setMyPresence({ cursor: current });
     },
