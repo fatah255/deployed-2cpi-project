@@ -306,7 +306,10 @@ const Canvas = ({ boardId }: CanvasProps) => {
           // update the origin for the next move
           setCanvasState({
             mode: CanvasMode.Pointing,
-            origin: newOrigin,
+            origin: {
+              x: 0,
+              y: 0,
+            },
             dragging: true,
           });
         }
@@ -534,7 +537,10 @@ const Canvas = ({ boardId }: CanvasProps) => {
       } else if (canvasState.mode === CanvasMode.Pointing) {
         setCanvasState({
           mode: CanvasMode.Pointing,
-          origin: null,
+          origin: {
+            x: 0,
+            y: 0,
+          },
           dragging: false,
         });
       } else {
