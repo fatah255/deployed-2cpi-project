@@ -291,8 +291,12 @@ const Canvas = ({ boardId }: CanvasProps) => {
   // to know that the pointer left the layer
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      const bounds = (e.currentTarget as Element).getBoundingClientRect();
       //@ts-ignore
-      const point = pointerEventToCanvasPoint(e, camera);
+      const point = {
+        x: e.clientX - bounds.left - camera.x,
+        y: e.clientY - bounds.top - camera.y,
+      };
 
       if (canvasState.mode === CanvasMode.Inserting) {
         return;
@@ -439,7 +443,13 @@ const Canvas = ({ boardId }: CanvasProps) => {
   const onPointerUp = useMutation(
     ({}, e) => {
       //to know where the user is looking at
-      const point = pointerEventToCanvasPoint(e, camera);
+      // const point = pointerEventToCanvasPoint(e, camera);
+      const bounds = (e.currentTarget as Element).getBoundingClientRect();
+
+      const point = {
+        x: e.clientX - bounds.left - camera.x,
+        y: e.clientY - bounds.top - camera.y,
+      };
 
       if (
         canvasState.mode === CanvasMode.Pressing ||
