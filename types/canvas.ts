@@ -131,7 +131,8 @@ export type CanvasState =
     }
   | {
       mode: CanvasMode.Pointing;
-      origin: Point;
+      origin: Point | null;
+      dragging: boolean;
     };
 
 export enum CanvasMode {

@@ -57,7 +57,6 @@ interface CanvasProps {
 const Canvas = ({ boardId }: CanvasProps) => {
   const x = useSelf((me) => me.info?.id);
 
-  console.log("connectionId", x);
   const [token, setToken] = useState<string | null>(null);
   // check if the user is an admin
   const { membership } = useOrganization();
@@ -67,6 +66,26 @@ const Canvas = ({ boardId }: CanvasProps) => {
   const [canvasState, setCanvasState] = useState<CanvasState>({
     mode: CanvasMode.None,
   });
+
+  useEffect(() => {
+    const handlePointerCancel = () => {
+      if (canvasState.mode === CanvasMode.Pointing) {
+        setCanvasState({
+          mode: CanvasMode.Pointing,
+          origin: null,
+          dragging: false,
+        });
+      }
+    };
+
+    document.addEventListener("pointercancel", handlePointerCancel);
+    document.addEventListener("touchend", handlePointerCancel); // iOS
+
+    return () => {
+      document.removeEventListener("pointercancel", handlePointerCancel);
+      document.removeEventListener("touchend", handlePointerCancel);
+    };
+  }, [canvasState.mode]);
 
   useEventListener(({ event }) => {
     //@ts-ignore
@@ -266,6 +285,7 @@ const Canvas = ({ boardId }: CanvasProps) => {
         resizeSelectedLayer(current);
       } else if (
         canvasState.mode === CanvasMode.Pointing &&
+        canvasState.dragging &&
         "origin" in canvasState
       ) {
         let deltaX: number, deltaY: number;
@@ -280,13 +300,14 @@ const Canvas = ({ boardId }: CanvasProps) => {
             y: e.clientY,
           };
 
-          deltaX = newOrigin.x - canvasState.origin.x;
-          deltaY = newOrigin.y - canvasState.origin.y;
+          deltaX = newOrigin.x - canvasState.origin?.x! || 0;
+          deltaY = newOrigin.y - canvasState.origin?.y! || 0;
 
           // update the origin for the next move
           setCanvasState({
             mode: CanvasMode.Pointing,
             origin: newOrigin,
+            dragging: true,
           });
         }
 
@@ -338,6 +359,7 @@ const Canvas = ({ boardId }: CanvasProps) => {
         setCanvasState({
           mode: CanvasMode.Pointing,
           origin: point,
+          dragging: true,
         });
         return;
       }
@@ -510,7 +532,11 @@ const Canvas = ({ boardId }: CanvasProps) => {
         //add a new layer to the canvas
         insertLayer(canvasState.layerType, point);
       } else if (canvasState.mode === CanvasMode.Pointing) {
-        setCanvasState({ mode: CanvasMode.Pointing });
+        setCanvasState({
+          mode: CanvasMode.Pointing,
+          origin: null,
+          dragging: false,
+        });
       } else {
         setCanvasState({ mode: CanvasMode.None });
       }

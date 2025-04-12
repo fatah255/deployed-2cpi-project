@@ -147,6 +147,8 @@ const Toolbar = ({
           onClick={() => {
             setCanvasState({
               mode: CanvasMode.Pointing,
+              origin: null,
+              dragging: false,
             });
           }}
         />
