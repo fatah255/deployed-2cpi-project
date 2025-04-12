@@ -67,26 +67,6 @@ const Canvas = ({ boardId }: CanvasProps) => {
     mode: CanvasMode.None,
   });
 
-  useEffect(() => {
-    const handlePointerCancel = () => {
-      if (canvasState.mode === CanvasMode.Pointing) {
-        setCanvasState({
-          mode: CanvasMode.Pointing,
-          origin: null,
-          dragging: false,
-        });
-      }
-    };
-
-    document.addEventListener("pointercancel", handlePointerCancel);
-    document.addEventListener("touchend", handlePointerCancel); // iOS
-
-    return () => {
-      document.removeEventListener("pointercancel", handlePointerCancel);
-      document.removeEventListener("touchend", handlePointerCancel);
-    };
-  }, [canvasState.mode]);
-
   useEventListener(({ event }) => {
     //@ts-ignore
     if (event.type === "RAISE_HAND") {
@@ -124,6 +104,25 @@ const Canvas = ({ boardId }: CanvasProps) => {
       unmuteAdmin();
     }
   }, [isAdmin, boardId, user?.id]);
+
+  useEffect(() => {
+    const handlePointerCancel = () => {
+      if (canvasState.mode === CanvasMode.Pointing) {
+        setCanvasState({
+          mode: CanvasMode.Pointing,
+          origin: null,
+          dragging: false,
+        });
+      }
+    };
+    document.addEventListener("pointercancel", handlePointerCancel);
+    document.addEventListener("touchend", handlePointerCancel);
+
+    return () => {
+      document.removeEventListener("pointercancel", handlePointerCancel);
+      document.removeEventListener("touchend", handlePointerCancel);
+    };
+  }, [canvasState.mode, setCanvasState]);
 
   //livekit
 
@@ -286,38 +285,21 @@ const Canvas = ({ boardId }: CanvasProps) => {
       } else if (
         canvasState.mode === CanvasMode.Pointing &&
         canvasState.dragging &&
-        "origin" in canvasState
+        canvasState.origin
       ) {
-        let deltaX: number, deltaY: number;
-
-        if (e.movementX !== undefined && e.pointerType === "mouse") {
-          deltaX = e.movementX;
-          deltaY = e.movementY;
-        } else {
-          // fallback for touch: calculate from screen coordinates
-          const newOrigin = {
-            x: e.clientX,
-            y: e.clientY,
-          };
-
-          deltaX = newOrigin.x - canvasState.origin?.x! || 0;
-          deltaY = newOrigin.y - canvasState.origin?.y! || 0;
-
-          // update the origin for the next move
-          setCanvasState({
-            mode: CanvasMode.Pointing,
-            origin: {
-              x: 0,
-              y: 0,
-            },
-            dragging: true,
-          });
-        }
-
+        const deltaX = e.clientX - canvasState.origin.x;
+        const deltaY = e.clientY - canvasState.origin.y;
         setCamera((prev) => ({
           x: prev.x + deltaX,
           y: prev.y + deltaY,
         }));
+        // update origin for next movement
+        setCanvasState({
+          mode: CanvasMode.Pointing,
+          origin: { x: e.clientX, y: e.clientY },
+          dragging: true,
+        });
+        return;
       } else if (canvasState.mode === CanvasMode.Pencil) {
         continueDrawing(
           {
@@ -348,6 +330,31 @@ const Canvas = ({ boardId }: CanvasProps) => {
     },
     [lastUsedColor]
   );
+  useEffect(() => {
+    const handleGlobalPointerUp = (e: PointerEvent) => {
+      // Only act if we're in pointing mode and dragging is active.
+      if (canvasState.mode === CanvasMode.Pointing && canvasState.dragging) {
+        setCanvasState({
+          mode: CanvasMode.Pointing,
+          origin: null,
+          dragging: false,
+        });
+      }
+    };
+
+    document.addEventListener("pointerup", handleGlobalPointerUp);
+    document.addEventListener("pointercancel", handleGlobalPointerUp);
+    //@ts-ignore
+    document.addEventListener("touchend", handleGlobalPointerUp); // For touch devices
+
+    return () => {
+      document.removeEventListener("pointerup", handleGlobalPointerUp);
+      document.removeEventListener("pointercancel", handleGlobalPointerUp);
+      //@ts-ignore
+      document.removeEventListener("touchend", handleGlobalPointerUp);
+    };
+    //@ts-ignore
+  }, [canvasState.mode, canvasState.dragging, setCanvasState]);
 
   // to know that the pointer left the layer
   const onPointerDown = useCallback(
@@ -359,9 +366,10 @@ const Canvas = ({ boardId }: CanvasProps) => {
         y: e.clientY - bounds.top - camera.y,
       };
       if (canvasState.mode === CanvasMode.Pointing) {
+        // Start dragging in Pointing mode: store the screen coordinates as origin.
         setCanvasState({
           mode: CanvasMode.Pointing,
-          origin: point,
+          origin: { x: e.clientX, y: e.clientY },
           dragging: true,
         });
         return;
@@ -535,14 +543,14 @@ const Canvas = ({ boardId }: CanvasProps) => {
         //add a new layer to the canvas
         insertLayer(canvasState.layerType, point);
       } else if (canvasState.mode === CanvasMode.Pointing) {
+        // Stop dragging, but remain in Pointing mode.
+
         setCanvasState({
           mode: CanvasMode.Pointing,
-          origin: {
-            x: 0,
-            y: 0,
-          },
+          origin: { x: e.clientX, y: e.clientY },
           dragging: false,
         });
+        return;
       } else {
         setCanvasState({ mode: CanvasMode.None });
       }
