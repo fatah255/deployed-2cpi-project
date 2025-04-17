@@ -48,7 +48,7 @@ import { LiveKitRoom } from "@livekit/components-react";
 import { toast } from "sonner";
 import Chat from "./Chat";
 
-const MAX_LAYERS = 100;
+const MAX_LAYERS = 10000;
 
 interface CanvasProps {
   boardId: string;
@@ -267,20 +267,23 @@ const Canvas = ({ boardId }: CanvasProps) => {
   //to move the cursor
   const onPointerMove = useMutation(
     ({ setMyPresence }, e: React.PointerEvent) => {
-      if (!isAdmin) return;
       e.preventDefault();
       const bounds = (e.currentTarget as Element).getBoundingClientRect();
       //@ts-ignore
       const current = pointerEventToCanvasPoint(e, camera);
       if (canvasState.mode === CanvasMode.Pressing) {
+        if (!isAdmin) return;
         startMultiSelection(current, canvasState.origin);
       } else if (canvasState.mode === CanvasMode.SelectionNet) {
+        if (!isAdmin) return;
         updateSelectionNet(current, canvasState.origin);
       } else if (canvasState.mode === CanvasMode.translating) {
         if (isAdmin) {
+          if (!isAdmin) return;
           translateSelectedLayers(current);
         }
       } else if (canvasState.mode === CanvasMode.resizing) {
+        if (!isAdmin) return;
         resizeSelectedLayer(current);
       } else if (
         canvasState.mode === CanvasMode.Pointing &&
@@ -301,6 +304,7 @@ const Canvas = ({ boardId }: CanvasProps) => {
         });
         return;
       } else if (canvasState.mode === CanvasMode.Pencil) {
+        if (!isAdmin) return;
         continueDrawing(
           {
             x: e.clientX - bounds.left - camera.x,
@@ -683,22 +687,24 @@ const Canvas = ({ boardId }: CanvasProps) => {
         <Participants isAdmin={isAdmin ? true : false} roomId={boardId} />
       </LiveKitRoom>
       <Chat />
-      {isAdmin && (
-        <>
-          {" "}
-          <Toolbar
-            camera={camera}
-            insertImage={insertImage}
-            canvasState={canvasState}
-            setCanvasState={setCanvasState}
-            undo={history.undo}
-            redo={history.redo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-          />
+
+      <>
+        {" "}
+        <Toolbar
+          camera={camera}
+          insertImage={insertImage}
+          canvasState={canvasState}
+          setCanvasState={setCanvasState}
+          undo={history.undo}
+          redo={history.redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          isAdmin={isAdmin}
+        />
+        {isAdmin && (
           <SelectionTools camera={camera} setLastUsedColor={setLastUsedColor} />
-        </>
-      )}
+        )}
+      </>
 
       <svg
         onWheel={onWheel}
